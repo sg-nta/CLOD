@@ -8,22 +8,27 @@ import numpy as np
 from termcolor import colored
 
 
-def Incre_Dataset(task_num, args, incremental_classes, pseudo_dataset = False):
+def Incre_Dataset(task_num, args, incremental_classes, pseudo_dataset = False, is_eval_mode=False, T2_path=None):
     """Create dataset and data loader for a given task, either for training or evaluation."""
     
     current_classes = incremental_classes[task_num]
     all_classes = sum(incremental_classes[:task_num + 1], [])
+    # all_classes = sum(incremental_classes[:task_num + 2], [])
+    # all_classes = incremental_classes[task_num]
     previous_all_classes = sum(incremental_classes[:task_num], [])
-    is_eval_mode = args.eval
     is_distributed = args.distributed
     
     #* For Training
     if not is_eval_mode:
         if pseudo_dataset :
-            train_dataset = build_dataset(image_set='train', args=args, class_ids=previous_all_classes, pseudo=True)
+            if T2_path is not None :
+                train_dataset = build_dataset(image_set='train', args=args, class_ids=current_classes, pseudo=True, T2_path=T2_path)
+            else :
+                train_dataset = build_dataset(image_set='train', args=args, class_ids=previous_all_classes, pseudo=True)
+            
             return train_dataset, None, None, previous_all_classes
         else :
-            train_dataset = build_dataset(image_set='train', args=args, class_ids=current_classes)
+            train_dataset = build_dataset(image_set='train', args=args, class_ids=current_classes, task_idx=task_num, incremental_setup=incremental_classes)
             
         print(f"Current classes for training: {current_classes}")
         train_sampler = samplers.DistributedSampler(train_dataset, shuffle=True) if is_distributed else torch.utils.data.RandomSampler(train_dataset)
@@ -160,7 +165,7 @@ from datasets.coco import make_coco_transforms
 import json
 from pycocotools.coco import COCO
 class PseudoDataset(torch.utils.data.Dataset):
-    def __init__(self, folder_path, args, gen_json_dir= None, pseudo_path=None, existing_ids=None, regen=False):
+    def __init__(self, folder_path, args, gen_json_dir= None, pseudo_path=None, ):
         """
         folder_path: 이미지들이 있는 폴더의 경로
         transform: 이미지에 적용할 변환 (예: torchvision.transforms)
@@ -168,13 +173,8 @@ class PseudoDataset(torch.utils.data.Dataset):
         self.folder_path = folder_path
         self.image_paths = glob(os.path.join(self.folder_path, '*.jpg'))
         self.image_ids = list(map(lambda x: os.path.basename(x), self.image_paths)) #* list
-        if existing_ids is not None:
-            self.image_ids = [img_id for img_id in self.image_ids if img_id not in existing_ids]
         self.transform = make_coco_transforms("val")
         self.generate_data = self.coco_loader(os.path.join(args.coco_path, "annotations/instances_val2017.json")) #* coco format
-        if regen :
-            with open(pseudo_path, 'r') as f:
-                self.indicated_data = json.load(f)
         
         if gen_json_dir is not  None and pseudo_path is not None:
             self.original_data = COCO(gen_json_dir) #* Generated images format
@@ -193,6 +193,7 @@ class PseudoDataset(torch.utils.data.Dataset):
         return image, image_id  # 타겟이 없으므로 이미지만 반환합니다.
 
     def coco_loader(self, coco_dir):
+        
         with open(coco_dir, 'r') as f:
             data = json.load(f)
             

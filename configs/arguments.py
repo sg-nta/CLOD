@@ -112,6 +112,7 @@ def get_args_parser():
     #* eval
     parser.add_argument('--all_data', default=False, action='store_true', help ="save your model output image") # I think this option is depreciated, so temporarily use for 79 path, and modify later ... .
     parser.add_argument('--FPP', default=False, action='store_true', help="Forgetting metrics")
+    parser.add_argument('--category_map', default=False, action='store_true', help="evaluation in each category")
     parser.add_argument('--Test_Classes', default=45, type=int, help="2 task eval(coco) : T1=45 / T2=90, 3task eval(coco) T1=30 T2=60 T3=90\
                                                                       this value be used to config model architecture in the adequate task")
     
@@ -119,36 +120,14 @@ def get_args_parser():
     parser.add_argument('--wandb', default=False, action='store_true')
     parser.add_argument('--prj_name', default='Diff_DDETR', type=str)
     parser.add_argument('--run_name', default='finetune', type=str)
+
     
     #* Generative Replay mode
-    parser.add_argument('--pseudo_generation', default=False, action='store_true', help="retaining previous task target through predict query")
     parser.add_argument('--pseudo_labeling', default=False, action='store_true', help="retaining previous task target through predict query")
     parser.add_argument('--labeling_check', default=False, action='store_true', help="retaining previous task target through predict query")
     parser.add_argument('--pseudo_training', default=False, action='store_true', help="retaining previous task target through predict query")
-    parser.add_argument("--gen_target_ratio", type=float,  default=0.2, help="")
-    
-    #* GLIGEN
-    parser.add_argument("--no_plms", action='store_true', help="use DDIM instead. WARNING: I did not test the code yet")
-    parser.add_argument("--blip2", action='store_true', help="use DDIM instead. WARNING: I did not test the code yet")
-    parser.add_argument("--gen_batch", type=int, default=1, help="")
-    parser.add_argument("--guidance_scale", type=float,  default=7.5, help="")
-    parser.add_argument("--negative_prompt", type=str,  default="blurry, overlapping objects, distorted proportions, (monochrome), (grayscale), bad hands, deformed, lowres, error, normal quality,\
-                                                                watermark, duplicate, worst quality, obscured faces, low visibility, unnatural colors, longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, \
-                                                                fewer digits, cropped, worst quality, low quality, (NSFW), extra limb, extra arms, rawing, painting, crayon, sketch, graphite,", help="")
-    parser.add_argument("--max_length", type=int, default=5, help="glgien generation limits")
-    parser.add_argument("--gen_length", type=int, default=25000, help="")
-    parser.add_argument("--coco_generator", action='store_true', help="use DDIM instead. WARNING: I did not test the code yet")
-    parser.add_argument("--generator_path", type=str,  default="/data/gen_dataset", help="")
-    parser.add_argument("--pseudo_path", type=str,  default="/data/gen_dataset", help="")
-    parser.add_argument("--gligen_path", type=str,  default="GLIGEN/gligen_checkpoints/checkpoint_generation_text.pth", help="")
-    
-    #* generative sufficient annotations for balance generation
-    parser.add_argument('--balance_gen', default=False, action='store_true', help="generate instances for balancing in each categories")
-    parser.add_argument('--new_gen', default=False, action='store_true', help="generate instances for balancing in each categories")
-    parser.add_argument("--sufficient_instances", type=int, default=3, help="")
-    parser.add_argument("--sufficient_box_size", type=float,  default=0.2, help="")
-    parser.add_argument("--object_counts", type=int,  default=500, help="")
-    
+    parser.add_argument('--pseudo_path', default='/data/gen_dataset/', type=str)
+    parser.add_argument('--pseudo_T2_path', default=None, type=str)
     return parser    
 
 
@@ -160,7 +139,7 @@ def deform_detr_parser(parser):
     parser.add_argument('--lr', default=2e-4, type=float)
     parser.add_argument('--lr_backbone', default=2e-5, type=float)
     parser.add_argument('--batch_size', default=4, type=int)
-    parser.add_argument('--epochs', default=50, type=int)
+    parser.add_argument('--epochs', default=600, type=int)
     parser.add_argument('--lr_drop', default=40, type=int)
     parser.add_argument('--lr_drop_epochs', default=None, type=int, nargs='+')
 

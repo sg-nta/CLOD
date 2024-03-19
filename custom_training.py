@@ -18,6 +18,7 @@ import torch
 import util.misc as utils
 import numpy as np
 from typing import Tuple, Dict, List, Optional
+import torch.nn.functional as F
 
 from torch.cuda.amp import autocast
 from custom_fake_target import normal_query_selc_to_target
@@ -39,49 +40,101 @@ def training(args, task_idx, last_task, epo, idx, count, sum_loss, samples, targ
     return sum_loss, count
 
 
+# Knowledge Distillation Loss for Classification Head
+def classification_distillation_loss(teacher_logits, student_logits):
+    loss = F.mse_loss(student_logits, teacher_logits, reduction='mean')
+    return loss
+
+# Knowledge Distillation Loss for Regression Head
+def regression_distillation_loss(teacher_boxes, student_boxes):
+    loss = F.mse_loss(student_boxes, teacher_boxes, reduction='mean')
+    return loss
+
 #TODO: generated image filter operation. necessary filtering.
-def _common_training(args, epo, idx, task_idx, last_task, count, sum_loss, 
+def _common_training(args, epoch, idx, task_idx, last_task, count, sum_loss, 
                      samples, targets, model: torch.nn.Module, optimizer:torch.optim.Optimizer,
                      teacher_model, criterion: torch.nn.Module, device, ex_device, current_classes, t_type=None):
+    distillation_loss = 0.0
     model.train()
     criterion.train()
+    gen_idx = []
+    if args.Distill : 
+        gen_idx = [idx for idx, target in enumerate(targets) 
+                    if (target["orig_size"][0] == target["orig_size"][1]) 
+                    and torch.all(target["labels"] < min(current_classes))]
 
-    #* teacher distllation
-    if last_task and args.Distill:
-        teacher_model.eval()
-        teacher_model.to(device)
-        teacher_attn = compute_attn_weight(teacher_model, model, samples, device, ex_device)
-        teacher_model.to("cpu")
-
-    #* fake query selection(pseudo labeling)
-    if args.Fake_Query:
+    if args.Fake_Query and args.Distill:
         teacher_model.eval()
         teacher_model.to(device)
         teacher_outputs = teacher_model(samples)
-        targets = normal_query_selc_to_target(teacher_outputs, targets, current_classes)  # Adjust this line as necessary
+        targets = normal_query_selc_to_target(teacher_outputs, targets, current_classes)
         teacher_model.to("cpu")
-        
-    #* current training outputs
-    outputs = inference_model(args, model, samples, targets, teacher_attn)
-
-
-    loss_dict = criterion(outputs, targets)
-    weight_dict = criterion.weight_dict
-    losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
-    losses_value = losses.item()
     
-    #* call every loss at each GPUs
-    loss_dict_reduced = utils.reduce_dict(loss_dict, train_check=True)
-    if loss_dict_reduced:
+    outputs = inference_model(args, model, samples, targets)
+    
+    if len(gen_idx) > 0 and args.Distill:
+        t_logits, t_boxes, t_aux_logits, t_aux_boxes = compute_gen_idx_loss(
+                                                            teacher_outputs['pred_logits'], 
+                                                            teacher_outputs['pred_boxes'], 
+                                                            teacher_outputs['aux_outputs'], 
+                                                            gen_idx
+                                                            )
+        s_logits, s_boxes, s_aux_logits, s_aux_boxes = compute_gen_idx_loss(
+                                                            outputs['pred_logits'], 
+                                                            outputs['pred_boxes'], 
+                                                            outputs['aux_outputs'], 
+                                                            gen_idx
+                                                        )
+        
+        classification_loss = classification_distillation_loss(t_logits, s_logits)
+        regression_loss = regression_distillation_loss(t_boxes, s_boxes)
+        for t_aux_logit, s_aux_logit in zip(t_aux_logits, s_aux_logits):
+            classification_loss += classification_distillation_loss(t_aux_logit, s_aux_logit)
+        for t_aux_box, s_aux_box in zip(t_aux_boxes, s_aux_boxes):
+            regression_loss += regression_distillation_loss(t_aux_box, s_aux_box)
+    
+        distillation_loss = (classification_loss*args.cls_loss_coef) + (regression_loss * args.bbox_loss_coef)
+    
+    real_aux_outputs = []
+    if len(gen_idx) == 0 :
+        loss_dict = criterion(outputs, targets)
+        weight_dict = criterion.weight_dict
+        losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
+        
+    else:
+        real_idx = [i for i in range(len(targets)) if i not in gen_idx]
+        
+        for aux_output in outputs['aux_outputs']:
+            real_aux_output = {
+                'pred_logits': aux_output['pred_logits'][real_idx],
+                'pred_boxes': aux_output['pred_boxes'][real_idx],
+            }
+            real_aux_outputs.append(real_aux_output)
 
-        count += 1
-        loss_dict_reduced_scaled = {v * weight_dict[k] for k, v in loss_dict_reduced.items() if k in weight_dict}
-        losses_reduced_scaled = sum(loss_dict_reduced_scaled)
+        real_outputs = {
+            'pred_logits': outputs['pred_logits'][real_idx],
+            'pred_boxes': outputs['pred_boxes'][real_idx],
+            'aux_outputs': real_aux_outputs,
+            "gt": None
+        }
+        real_targets = [targets[i] for i in real_idx]
+        if len(real_idx) == 0:
+            loss_dict = criterion(outputs, targets)
+            weight_dict = criterion.weight_dict
+            losses = sum(loss_dict[k] * 0 for k in loss_dict.keys() if k in weight_dict)
+        else:
+            loss_dict = criterion(real_outputs, real_targets)
+            weight_dict = criterion.weight_dict
+            losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
 
-        sum_loss += losses_reduced_scaled
-        if utils.is_main_process(): #sum_loss가 GPU의 개수에 맞춰서 더해주고 있으니,
-            check_losses(epo, idx, losses_reduced_scaled, sum_loss, count, current_classes, None)
-            print(f" {t_type} \t {{ task: {task_idx}, epoch : {epo} \t Loss : {losses_value:.4f} \t Total Loss : {sum_loss/count:.4f} }}")
+    if len(gen_idx) > 0:
+        losses += distillation_loss * 2
+    
+    losses_value = losses.item()
+    sum_loss += losses_value
+    
+    count += 1
+    print(f" {t_type} \t {{ task: {task_idx}, epoch : {epoch} \t Loss : {losses_value:.4f} \t distillation : {distillation_loss:.4f} \t Total Loss : {sum_loss / count:.4f}}}")
     
     optimizer.zero_grad()
     losses.backward()
@@ -171,7 +224,7 @@ def icarl_rehearsal_training(args, samples, targets, fe: torch.nn.Module, proto:
             try:
                 class_mean = proto[label]
             except KeyError:
-                print(f'label: {label} don\'t in prototype: {proto.keys()}')
+                # print(f'label: {label} don\'t in prototype: {proto.keys()}')
                 continue
             try :
                 if label in rehearsal_classes: # rehearsal_classes[label] exist
@@ -189,7 +242,7 @@ def icarl_rehearsal_training(args, samples, targets, fe: torch.nn.Module, proto:
                     difference = torch.argmin(torch.sqrt(torch.sum((class_mean - feat_0)**2, axis=0))).item() # argmin is true????
                     rehearsal_classes[label] = [feat_0, [[target['image_id'].item(), difference], ]]
             except Exception as e:
-                print(f"Error opening image: {e}")
+                # print(f"Error opening image: {e}")
                 difference = torch.argmin(torch.sqrt(torch.sum((class_mean - feat_0)**2, axis=0))).item() # argmin is true????
                 rehearsal_classes[label] = [feat_0, [[target['image_id'].item(), difference], ]]
             
@@ -242,7 +295,8 @@ def rehearsal_training(args, samples, targets, model: torch.nn.Module, criterion
                                                 limit_image=args.limit_image)
     
     
-    if utils.get_world_size() > 1: dist.barrier()
+    if utils.get_world_size() > 1:    
+        dist.barrier()
     return rehearsal_classes
 
 

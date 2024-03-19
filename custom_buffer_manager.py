@@ -297,7 +297,8 @@ def _save_rehearsal_for_combine(task, dir, rehearsal, epoch):
         os.makedirs(backupdir, exist_ok=True)
         print(f"Backup directory created")    
         
-    if utils.get_world_size() > 1: dist.barrier()
+    if utils.get_world_size() > 1:
+        dist.barrier()
 
     temp_dict = copy.deepcopy(rehearsal)
     for key, value in rehearsal.items():
@@ -473,7 +474,8 @@ def merge_rehearsal_process(args, task:int ,dir:str ,rehearsal:dict ,epoch:int
     _save_rehearsal_for_combine(task, dir, rehearsal, epoch)
     
     # All GPUs ready replay buffer combining work(protecting some errors)
-    if utils.get_world_size() > 1: dist.barrier()
+    if utils.get_world_size() > 1:    
+        dist.barrier()
         
     if utils.is_main_process() : 
         rehearsal_classes = _multigpu_rehearsal(args, dir, limit_memory_size, gpu_counts, task, epoch, least_image, list_CC)
@@ -484,7 +486,8 @@ def merge_rehearsal_process(args, task:int ,dir:str ,rehearsal:dict ,epoch:int
         buffer_checker(args, task, rehearsal=rehearsal_classes)
     
     # wait main process to synchronization
-    if utils.get_world_size() > 1: dist.barrier()
+    if utils.get_world_size() > 1:    
+        dist.barrier()
 
     # All GPUs ready replay dataset
     rehearsal_classes = load_rehearsal(all_dir)

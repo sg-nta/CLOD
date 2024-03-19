@@ -23,9 +23,9 @@ def get_coco_api_from_dataset(dataset):
         return dataset.coco
 
 
-def build_dataset(image_set, args, img_ids = None, class_ids=None, pseudo=False):
+def build_dataset(image_set, args, img_ids = None, class_ids=None, pseudo=False, T2_path=None, task_idx=None, incremental_setup=None):
     if args.dataset_file == 'coco':
-        return build_coco(image_set, args, img_ids=img_ids, class_ids=class_ids, pseudo=pseudo)
+        return build_coco(image_set, args, img_ids=img_ids, class_ids=class_ids, pseudo=pseudo, T2_path=T2_path, task_idx=task_idx, incremental_setup=incremental_setup)
     if args.dataset_file == 'coco_panoptic':
         # to avoid making panopticapi required for coco
         from .coco_panoptic import build as build_coco_panoptic

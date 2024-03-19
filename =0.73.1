@@ -1,0 +1,239 @@
+Collecting git+https://github.com/openai/CLIP.git
+  Cloning https://github.com/openai/CLIP.git to /tmp/pip-req-build-z_geryny
+Collecting albumentations==0.4.3
+  Using cached albumentations-0.4.3-py3-none-any.whl
+Requirement already satisfied: opencv-python in /home/user/anaconda3/lib/python3.8/site-packages (4.6.0.66)
+Collecting pudb==2019.2
+  Using cached pudb-2019.2-py3-none-any.whl
+Requirement already satisfied: imageio==2.9.0 in /home/user/anaconda3/lib/python3.8/site-packages (2.9.0)
+Collecting imageio-ffmpeg==0.4.2
+  Using cached imageio_ffmpeg-0.4.2-py3-none-manylinux2010_x86_64.whl (26.9 MB)
+Collecting pytorch-lightning==1.4.2
+  Downloading pytorch_lightning-1.4.2-py3-none-any.whl (916 kB)
+Collecting omegaconf==2.1.1
+  Using cached omegaconf-2.1.1-py3-none-any.whl (74 kB)
+Collecting test-tube
+  Using cached test_tube-0.7.5-py3-none-any.whl
+Collecting streamlit
+  Downloading streamlit-1.27.2-py2.py3-none-any.whl (7.6 MB)
+Collecting einops==0.3.0
+  Downloading einops-0.3.0-py2.py3-none-any.whl (25 kB)
+Collecting torch-fidelity==0.3.0
+  Using cached torch_fidelity-0.3.0-py3-none-any.whl (37 kB)
+Collecting protobuf~=3.20.1
+  Downloading protobuf-3.20.3-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl (1.0 MB)
+Collecting torchmetrics==0.6.0
+  Downloading torchmetrics-0.6.0-py3-none-any.whl (329 kB)
+Collecting transformers==4.19.2
+  Using cached transformers-4.19.2-py3-none-any.whl (4.2 MB)
+Collecting kornia==0.5.8
+  Downloading kornia-0.5.8-py2.py3-none-any.whl (303 kB)
+Requirement already satisfied: termcolor in /home/user/anaconda3/lib/python3.8/site-packages (1.1.0)
+Collecting ftfy
+  Using cached ftfy-6.1.1-py3-none-any.whl (53 kB)
+Requirement already satisfied: regex in /home/user/anaconda3/lib/python3.8/site-packages (from clip==1.0) (2021.4.4)
+Requirement already satisfied: tqdm in /home/user/anaconda3/lib/python3.8/site-packages (from clip==1.0) (4.59.0)
+Requirement already satisfied: torch in /home/user/anaconda3/lib/python3.8/site-packages (from clip==1.0) (1.12.1+cu113)
+Requirement already satisfied: torchvision in /home/user/anaconda3/lib/python3.8/site-packages (from clip==1.0) (0.13.1+cu113)
+Requirement already satisfied: PyYAML in /home/user/anaconda3/lib/python3.8/site-packages (from albumentations==0.4.3) (5.4.1)
+Requirement already satisfied: scipy in /home/user/anaconda3/lib/python3.8/site-packages (from albumentations==0.4.3) (1.6.2)
+Requirement already satisfied: opencv-python-headless>=4.1.1 in /home/user/anaconda3/lib/python3.8/site-packages (from albumentations==0.4.3) (4.6.0.66)
+Collecting imgaug<0.2.7,>=0.2.5
+  Using cached imgaug-0.2.6-py3-none-any.whl
+Requirement already satisfied: numpy>=1.11.1 in /home/user/anaconda3/lib/python3.8/site-packages (from albumentations==0.4.3) (1.20.1)
+Requirement already satisfied: pillow in /home/user/anaconda3/lib/python3.8/site-packages (from imageio==2.9.0) (8.2.0)
+Collecting antlr4-python3-runtime==4.8
+  Using cached antlr4-python3-runtime-4.8.tar.gz (112 kB)
+Collecting urwid>=1.1.1
+  Downloading urwid-2.2.2-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (272 kB)
+Requirement already satisfied: pygments>=1.0 in /home/user/anaconda3/lib/python3.8/site-packages (from pudb==2019.2) (2.8.1)
+Requirement already satisfied: future>=0.17.1 in /home/user/anaconda3/lib/python3.8/site-packages (from pytorch-lightning==1.4.2) (0.18.2)
+Requirement already satisfied: packaging>=17.0 in /home/user/anaconda3/lib/python3.8/site-packages (from pytorch-lightning==1.4.2) (20.9)
+Collecting fsspec[http]!=2021.06.0,>=2021.05.0
+  Downloading fsspec-2023.9.2-py3-none-any.whl (173 kB)
+Collecting tensorboard>=2.2.0
+  Using cached tensorboard-2.14.0-py3-none-any.whl (5.5 MB)
+Requirement already satisfied: typing-extensions in /home/user/anaconda3/lib/python3.8/site-packages (from pytorch-lightning==1.4.2) (3.7.4.3)
+Collecting pyDeprecate==0.3.1
+  Using cached pyDeprecate-0.3.1-py3-none-any.whl (10 kB)
+Requirement already satisfied: requests in /home/user/anaconda3/lib/python3.8/site-packages (from transformers==4.19.2) (2.25.1)
+Collecting tokenizers!=0.11.3,<0.13,>=0.11.1
+  Using cached tokenizers-0.12.1-cp38-cp38-manylinux_2_12_x86_64.manylinux2010_x86_64.whl (6.6 MB)
+Requirement already satisfied: filelock in /home/user/anaconda3/lib/python3.8/site-packages (from transformers==4.19.2) (3.0.12)
+Collecting huggingface-hub<1.0,>=0.1.0
+  Downloading huggingface_hub-0.18.0-py3-none-any.whl (301 kB)
+Requirement already satisfied: aiohttp!=4.0.0a0,!=4.0.0a1 in /home/user/anaconda3/lib/python3.8/site-packages (from fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (3.8.1)
+Requirement already satisfied: frozenlist>=1.1.1 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (1.3.0)
+Requirement already satisfied: attrs>=17.3.0 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (20.3.0)
+Requirement already satisfied: charset-normalizer<3.0,>=2.0 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (2.0.12)
+Requirement already satisfied: yarl<2.0,>=1.0 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (1.7.2)
+Requirement already satisfied: async-timeout<5.0,>=4.0.0a3 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (4.0.2)
+Requirement already satisfied: multidict<7.0,>=4.5 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (6.0.2)
+Requirement already satisfied: aiosignal>=1.1.2 in /home/user/anaconda3/lib/python3.8/site-packages (from aiohttp!=4.0.0a0,!=4.0.0a1->fsspec[http]!=2021.06.0,>=2021.05.0->pytorch-lightning==1.4.2) (1.2.0)
+Requirement already satisfied: scikit-image>=0.11.0 in /home/user/anaconda3/lib/python3.8/site-packages (from imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (0.18.1)
+Requirement already satisfied: six in /home/user/anaconda3/lib/python3.8/site-packages (from imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (1.15.0)
+Requirement already satisfied: pyparsing>=2.0.2 in /home/user/anaconda3/lib/python3.8/site-packages (from packaging>=17.0->pytorch-lightning==1.4.2) (2.4.7)
+Requirement already satisfied: matplotlib!=3.0.0,>=2.0.0 in /home/user/anaconda3/lib/python3.8/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (3.3.4)
+Requirement already satisfied: networkx>=2.0 in /home/user/anaconda3/lib/python3.8/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (2.5)
+Requirement already satisfied: tifffile>=2019.7.26 in /home/user/anaconda3/lib/python3.8/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (2020.10.1)
+Requirement already satisfied: PyWavelets>=1.1.1 in /home/user/anaconda3/lib/python3.8/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (1.1.1)
+Requirement already satisfied: cycler>=0.10 in /home/user/anaconda3/lib/python3.8/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (0.10.0)
+Requirement already satisfied: python-dateutil>=2.1 in /home/user/anaconda3/lib/python3.8/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (2.8.1)
+Requirement already satisfied: kiwisolver>=1.0.1 in /home/user/anaconda3/lib/python3.8/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (1.3.1)
+Requirement already satisfied: decorator>=4.3.0 in /home/user/anaconda3/lib/python3.8/site-packages (from networkx>=2.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations==0.4.3) (5.0.6)
+Requirement already satisfied: absl-py>=0.4 in /home/user/anaconda3/lib/python3.8/site-packages (from tensorboard>=2.2.0->pytorch-lightning==1.4.2) (1.0.0)
+Collecting grpcio>=1.48.2
+  Downloading grpcio-1.59.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (5.3 MB)
+Collecting google-auth-oauthlib<1.1,>=0.5
+  Using cached google_auth_oauthlib-1.0.0-py2.py3-none-any.whl (18 kB)
+Requirement already satisfied: setuptools>=41.0.0 in /home/user/anaconda3/lib/python3.8/site-packages (from tensorboard>=2.2.0->pytorch-lightning==1.4.2) (52.0.0.post20210125)
+Requirement already satisfied: wheel>=0.26 in /home/user/anaconda3/lib/python3.8/site-packages (from tensorboard>=2.2.0->pytorch-lightning==1.4.2) (0.36.2)
+Requirement already satisfied: werkzeug>=1.0.1 in /home/user/anaconda3/lib/python3.8/site-packages (from tensorboard>=2.2.0->pytorch-lightning==1.4.2) (1.0.1)
+Collecting google-auth<3,>=1.6.3
+  Downloading google_auth-2.23.3-py2.py3-none-any.whl (182 kB)
+Collecting tensorboard-data-server<0.8.0,>=0.7.0
+  Using cached tensorboard_data_server-0.7.1-py3-none-manylinux2014_x86_64.whl (6.6 MB)
+Requirement already satisfied: markdown>=2.6.8 in /home/user/anaconda3/lib/python3.8/site-packages (from tensorboard>=2.2.0->pytorch-lightning==1.4.2) (3.3.6)
+Collecting rsa<5,>=3.1.4
+  Using cached rsa-4.9-py3-none-any.whl (34 kB)
+Collecting pyasn1-modules>=0.2.1
+  Using cached pyasn1_modules-0.3.0-py2.py3-none-any.whl (181 kB)
+Requirement already satisfied: cachetools<6.0,>=2.0.0 in /home/user/anaconda3/lib/python3.8/site-packages (from google-auth<3,>=1.6.3->tensorboard>=2.2.0->pytorch-lightning==1.4.2) (5.0.0)
+Collecting requests-oauthlib>=0.7.0
+  Using cached requests_oauthlib-1.3.1-py2.py3-none-any.whl (23 kB)
+Requirement already satisfied: importlib-metadata>=4.4 in /home/user/anaconda3/lib/python3.8/site-packages (from markdown>=2.6.8->tensorboard>=2.2.0->pytorch-lightning==1.4.2) (4.11.3)
+Requirement already satisfied: zipp>=0.5 in /home/user/anaconda3/lib/python3.8/site-packages (from importlib-metadata>=4.4->markdown>=2.6.8->tensorboard>=2.2.0->pytorch-lightning==1.4.2) (3.4.1)
+Collecting pyasn1<0.6.0,>=0.4.6
+  Using cached pyasn1-0.5.0-py2.py3-none-any.whl (83 kB)
+Requirement already satisfied: idna<3,>=2.5 in /home/user/anaconda3/lib/python3.8/site-packages (from requests->transformers==4.19.2) (2.10)
+Requirement already satisfied: certifi>=2017.4.17 in /home/user/anaconda3/lib/python3.8/site-packages (from requests->transformers==4.19.2) (2022.6.15)
+Requirement already satisfied: chardet<5,>=3.0.2 in /home/user/anaconda3/lib/python3.8/site-packages (from requests->transformers==4.19.2) (4.0.0)
+Requirement already satisfied: urllib3<1.27,>=1.21.1 in /home/user/anaconda3/lib/python3.8/site-packages (from requests->transformers==4.19.2) (1.26.4)
+Collecting oauthlib>=3.0.0
+  Using cached oauthlib-3.2.2-py3-none-any.whl (151 kB)
+Collecting tzlocal<6,>=1.1
+  Downloading tzlocal-5.1-py3-none-any.whl (21 kB)
+Collecting validators<1,>=0.2
+  Downloading validators-0.22.0-py3-none-any.whl (26 kB)
+Requirement already satisfied: tornado<7,>=6.0.3 in /home/user/anaconda3/lib/python3.8/site-packages (from streamlit) (6.1)
+Collecting pandas<3,>=1.3.0
+  Downloading pandas-2.0.3-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (12.4 MB)
+Collecting requests
+  Downloading requests-2.31.0-py3-none-any.whl (62 kB)
+Collecting altair<6,>=4.0
+  Downloading altair-5.1.2-py3-none-any.whl (516 kB)
+Collecting typing-extensions
+  Downloading typing_extensions-4.8.0-py3-none-any.whl (31 kB)
+Collecting pyarrow>=6.0
+  Downloading pyarrow-13.0.0-cp38-cp38-manylinux_2_28_x86_64.whl (40.1 MB)
+Collecting tenacity<9,>=8.1.0
+  Downloading tenacity-8.2.3-py3-none-any.whl (24 kB)
+Collecting blinker<2,>=1.0.0
+  Downloading blinker-1.6.3-py3-none-any.whl (13 kB)
+Requirement already satisfied: toml<2,>=0.10.1 in /home/user/anaconda3/lib/python3.8/site-packages (from streamlit) (0.10.2)
+Collecting pydeck<1,>=0.8.0b4
+  Using cached pydeck-0.8.1b0-py2.py3-none-any.whl (4.8 MB)
+Collecting rich<14,>=10.14.0
+  Downloading rich-13.6.0-py3-none-any.whl (239 kB)
+Collecting watchdog>=2.1.5
+  Using cached watchdog-3.0.0-py3-none-manylinux2014_x86_64.whl (82 kB)
+Requirement already satisfied: click<9,>=7.0 in /home/user/anaconda3/lib/python3.8/site-packages (from streamlit) (7.1.2)
+Collecting gitpython!=3.1.19,<4,>=3.0.7
+  Downloading GitPython-3.1.37-py3-none-any.whl (190 kB)
+Requirement already satisfied: toolz in /home/user/anaconda3/lib/python3.8/site-packages (from altair<6,>=4.0->streamlit) (0.11.1)
+Requirement already satisfied: jinja2 in /home/user/anaconda3/lib/python3.8/site-packages (from altair<6,>=4.0->streamlit) (2.11.3)
+Requirement already satisfied: jsonschema>=3.0 in /home/user/anaconda3/lib/python3.8/site-packages (from altair<6,>=4.0->streamlit) (3.2.0)
+Collecting gitdb<5,>=4.0.1
+  Using cached gitdb-4.0.10-py3-none-any.whl (62 kB)
+Collecting smmap<6,>=3.0.1
+  Downloading smmap-5.0.1-py3-none-any.whl (24 kB)
+Requirement already satisfied: pyrsistent>=0.14.0 in /home/user/anaconda3/lib/python3.8/site-packages (from jsonschema>=3.0->altair<6,>=4.0->streamlit) (0.17.3)
+Requirement already satisfied: pytz>=2020.1 in /home/user/anaconda3/lib/python3.8/site-packages (from pandas<3,>=1.3.0->streamlit) (2021.1)
+Collecting tzdata>=2022.1
+  Using cached tzdata-2023.3-py2.py3-none-any.whl (341 kB)
+Collecting python-dateutil>=2.1
+  Using cached python_dateutil-2.8.2-py2.py3-none-any.whl (247 kB)
+Collecting numpy>=1.11.1
+  Using cached numpy-1.22.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (16.9 MB)
+Requirement already satisfied: MarkupSafe>=0.23 in /home/user/anaconda3/lib/python3.8/site-packages (from jinja2->altair<6,>=4.0->streamlit) (1.1.1)
+Collecting pygments>=1.0
+  Downloading Pygments-2.16.1-py3-none-any.whl (1.2 MB)
+Collecting markdown-it-py>=2.2.0
+  Downloading markdown_it_py-3.0.0-py3-none-any.whl (87 kB)
+Collecting mdurl~=0.1
+  Using cached mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Collecting backports.zoneinfo
+  Using cached backports.zoneinfo-0.2.1-cp38-cp38-manylinux1_x86_64.whl (74 kB)
+Requirement already satisfied: wcwidth>=0.2.5 in /home/user/anaconda3/lib/python3.8/site-packages (from ftfy->clip==1.0) (0.2.5)
+Building wheels for collected packages: clip, antlr4-python3-runtime
+  Building wheel for clip (setup.py): started
+  Building wheel for clip (setup.py): finished with status 'done'
+  Created wheel for clip: filename=clip-1.0-py3-none-any.whl size=1369525 sha256=473b3d0b155e3a5933c63893b043556fe528b0dd595ff2d17ae88903dc44e333
+  Stored in directory: /tmp/pip-ephem-wheel-cache-umqfq1eg/wheels/ab/4f/3a/5e51521b55997aa6f0690e095c08824219753128ce8d9969a3
+  Building wheel for antlr4-python3-runtime (setup.py): started
+  Building wheel for antlr4-python3-runtime (setup.py): finished with status 'done'
+  Created wheel for antlr4-python3-runtime: filename=antlr4_python3_runtime-4.8-py3-none-any.whl size=141230 sha256=d73d22066132c3e8bcd3479d3b23282b58ba66066c2ec00c79ea0e9ab11d9ac3
+  Stored in directory: /home/user/.cache/pip/wheels/c8/d0/ab/d43c02eaddc5b9004db86950802442ad9a26f279c619e28da0
+Successfully built clip antlr4-python3-runtime
+Installing collected packages: pyasn1, rsa, requests, python-dateutil, pyasn1-modules, oauthlib, numpy, tzdata, typing-extensions, smmap, requests-oauthlib, mdurl, google-auth, tensorboard-data-server, pygments, protobuf, pandas, markdown-it-py, grpcio, google-auth-oauthlib, gitdb, fsspec, backports.zoneinfo, watchdog, validators, urwid, tzlocal, torchmetrics, tokenizers, tensorboard, tenacity, rich, pyDeprecate, pydeck, pyarrow, imgaug, huggingface-hub, gitpython, ftfy, blinker, antlr4-python3-runtime, altair, transformers, torch-fidelity, test-tube, streamlit, pytorch-lightning, pudb, omegaconf, kornia, imageio-ffmpeg, einops, clip, albumentations
+  Attempting uninstall: requests
+    Found existing installation: requests 2.25.1
+    Uninstalling requests-2.25.1:
+      Successfully uninstalled requests-2.25.1
+  Attempting uninstall: python-dateutil
+    Found existing installation: python-dateutil 2.8.1
+    Uninstalling python-dateutil-2.8.1:
+      Successfully uninstalled python-dateutil-2.8.1
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.20.1
+    Uninstalling numpy-1.20.1:
+      Successfully uninstalled numpy-1.20.1
+  Attempting uninstall: typing-extensions
+    Found existing installation: typing-extensions 3.7.4.3
+    Uninstalling typing-extensions-3.7.4.3:
+      Successfully uninstalled typing-extensions-3.7.4.3
+  Attempting uninstall: pygments
+    Found existing installation: Pygments 2.8.1
+    Uninstalling Pygments-2.8.1:
+      Successfully uninstalled Pygments-2.8.1
+  Attempting uninstall: protobuf
+    Found existing installation: protobuf 3.20.0
+    Uninstalling protobuf-3.20.0:
+      Successfully uninstalled protobuf-3.20.0
+  Attempting uninstall: pandas
+    Found existing installation: pandas 1.2.4
+    Uninstalling pandas-1.2.4:
+      Successfully uninstalled pandas-1.2.4
+  Attempting uninstall: grpcio
+    Found existing installation: grpcio 1.44.0
+    Uninstalling grpcio-1.44.0:
+      Successfully uninstalled grpcio-1.44.0
+  Attempting uninstall: fsspec
+    Found existing installation: fsspec 0.9.0
+    Uninstalling fsspec-0.9.0:
+      Successfully uninstalled fsspec-0.9.0
+  Attempting uninstall: watchdog
+    Found existing installation: watchdog 1.0.2
+    Uninstalling watchdog-1.0.2:
+      Successfully uninstalled watchdog-1.0.2
+  Attempting uninstall: tensorboard
+    Found existing installation: tensorboard 1.14.0
+    Uninstalling tensorboard-1.14.0:
+      Successfully uninstalled tensorboard-1.14.0
+  Attempting uninstall: antlr4-python3-runtime
+    Found existing installation: antlr4-python3-runtime 4.9.3
+    Uninstalling antlr4-python3-runtime-4.9.3:
+      Successfully uninstalled antlr4-python3-runtime-4.9.3
+  Attempting uninstall: omegaconf
+    Found existing installation: omegaconf 2.3.0
+    Uninstalling omegaconf-2.3.0:
+      Successfully uninstalled omegaconf-2.3.0
+  Attempting uninstall: einops
+    Found existing installation: einops 0.4.1
+    Uninstalling einops-0.4.1:
+      Successfully uninstalled einops-0.4.1
+  Attempting uninstall: albumentations
+    Found existing installation: albumentations 1.2.1
+    Uninstalling albumentations-1.2.1:
+      Successfully uninstalled albumentations-1.2.1
+Successfully installed albumentations-0.4.3 altair-5.1.2 antlr4-python3-runtime-4.8 backports.zoneinfo-0.2.1 blinker-1.6.3 clip-1.0 einops-0.3.0 fsspec-2023.9.2 ftfy-6.1.1 gitdb-4.0.10 gitpython-3.1.37 google-auth-2.23.3 google-auth-oauthlib-1.0.0 grpcio-1.59.0 huggingface-hub-0.18.0 imageio-ffmpeg-0.4.2 imgaug-0.2.6 kornia-0.5.8 markdown-it-py-3.0.0 mdurl-0.1.2 numpy-1.22.4 oauthlib-3.2.2 omegaconf-2.1.1 pandas-2.0.3 protobuf-3.20.3 pudb-2019.2 pyDeprecate-0.3.1 pyarrow-13.0.0 pyasn1-0.5.0 pyasn1-modules-0.3.0 pydeck-0.8.1b0 pygments-2.16.1 python-dateutil-2.8.2 pytorch-lightning-1.4.2 requests-2.31.0 requests-oauthlib-1.3.1 rich-13.6.0 rsa-4.9 smmap-5.0.1 streamlit-1.27.2 tenacity-8.2.3 tensorboard-2.14.0 tensorboard-data-server-0.7.1 test-tube-0.7.5 tokenizers-0.12.1 torch-fidelity-0.3.0 torchmetrics-0.6.0 transformers-4.19.2 typing-extensions-4.8.0 tzdata-2023.3 tzlocal-5.1 urwid-2.2.2 validators-0.22.0 watchdog-3.0.0

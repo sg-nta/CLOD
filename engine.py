@@ -90,7 +90,7 @@ def train_one_epoch(args, task_idx, last_task, epo, model: torch.nn.Module, teac
     sum_loss = 0.0
     count = 0
     for idx in tqdm(range(len(data_loader)), disable=not utils.is_main_process()): #targets
-        if idx % 100 == 0:
+        if idx % 50 == 0:
             refresh_data()
         samples, targets = prefetcher.next()
         
@@ -114,6 +114,7 @@ def train_one_epoch(args, task_idx, last_task, epo, model: torch.nn.Module, teac
                 sum_loss, count = training(args, task_idx, last_task, epo, idx, count, sum_loss, samples, targets,  
                                             model, teacher_model, criterion, optimizer, current_classes, "original")
 
+        del samples, targets
         # 정완 디버그
         if args.debug:
             if count == args.num_debug_dataset:
@@ -125,9 +126,8 @@ def train_one_epoch(args, task_idx, last_task, epo, model: torch.nn.Module, teac
     if utils.is_main_process():
         print("Total Time : ", time.time() - set_tm)
         
-
 @torch.no_grad()
-def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, output_dir, DIR, args) :
+def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, output_dir, DIR, args, epoch=-1) :
     model.eval()
     criterion.eval()
 
@@ -136,13 +136,10 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
     header = 'Test:'
 
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())
-    
-    #FIXME: check your cocoEvaluator function for writing the results (I'll give you code that changed)
-    coco_evaluator = CocoEvaluator(base_ds, iou_types, DIR)
-    # coco_evaluator.coco_eval[iou_types[0]].params.iouThrs = [0, 0.1, 0.5, 0.75]
+    coco_evaluator = CocoEvaluator(base_ds, iou_types, DIR, args)
     
     cnt = 0 # for debug
-        
+    sum_loss = 0.0 # for logging
     for samples, targets in metric_logger.log_every(data_loader, 10, header):
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
@@ -163,6 +160,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
                              )
         metric_logger.update(class_error=loss_dict_reduced['class_error'])
 
+        sum_loss += sum(loss_dict_reduced_scaled.values())
         orig_target_sizes = torch.stack([t["orig_size"] for t in targets], dim=0)
         results = postprocessors['bbox'](outputs, orig_target_sizes, args.model_name)
         #print(results)
@@ -188,7 +186,10 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
             cnt += 1
             if cnt == args.num_debug_dataset:
                 break
-
+    
+    if args.wandb:
+        wandb.log({"eval loss": (sum_loss / len(data_loader)), "epoch": epoch})
+    
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
@@ -208,7 +209,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
             stats['coco_eval_masks'] = coco_evaluator.coco_eval['segm'].stats.tolist()
     return stats, coco_evaluator
 
-def pseudo_process(args, dataset_frame, data_loader: Iterable, image_paths, model: torch.nn.Module, device: torch.device, insufficient_cats=None, count=0, min_class=0, max_class=0):
+def pseudo_process(args, dataset_frame, gligen_frame, data_loader: Iterable, image_paths, model: torch.nn.Module, device: torch.device):
     model.eval()  # 모델을 평가 모드로 설정합니다.
     model.to(device)
     prefetcher = create_prefetcher("Pseudo", data_loader, device, args)
@@ -225,25 +226,12 @@ def pseudo_process(args, dataset_frame, data_loader: Iterable, image_paths, mode
             # 모델을 사용하여 이미지에 대한 예측을 수행합니다.
             outputs = model(images)
             image_name = image_name.pop()
-            labels, areas, boxes, threshold = pseudo_target(outputs, count, min_class, max_class)
-            pbar.set_postfix(threshold=f"{threshold:.2f}", count=count)
-            
+            labels, areas, boxes = pseudo_target(outputs)
             if boxes is None:
                 removal_list.append(os.path.join(image_paths, image_name))
                 pbar.update(1)
                 continue
             
-            if insufficient_cats is not None :
-                valid_indices = [i for i, label in enumerate(labels) if label.item() in insufficient_cats]
-                if not valid_indices:
-                    removal_list.append(os.path.join(image_paths, image_name))
-                    pbar.update(1)
-                    continue
-            
-                # labels = labels[valid_indices]
-                # areas = areas[valid_indices]
-                # boxes = boxes[valid_indices]
-                
             #* make images in coco format json
             image_info.append(_generate_imageinfo(image_name, heigth, width))
             
@@ -260,7 +248,7 @@ def pseudo_process(args, dataset_frame, data_loader: Iterable, image_paths, mode
     
     # 제거될 이미지들을 모아둘 폴더의 이름을 설정합니다.
     removal_folder_name = f"removed_images_{args.divide_ratio}"
-    removal_folder_path = os.path.join(args.output_dir, removal_folder_name)
+    removal_folder_path = os.path.join(args.pseudo_path, removal_folder_name)
     
     # 폴더가 존재하지 않는 경우, 폴더를 생성합니다.
     if not os.path.exists(removal_folder_path):
@@ -269,8 +257,8 @@ def pseudo_process(args, dataset_frame, data_loader: Iterable, image_paths, mode
     #* delete generated images
     print(colored(f"remove file length :  {len(removal_list)}", "blue", "on_yellow"))
     for path in removal_list: #! move deleted images version
-        # dest_path = os.path.join(removal_folder_path, os.path.basename(path))
-        os.remove(path)
+        dest_path = os.path.join(removal_folder_path, os.path.basename(path))
+        shutil.move(path, dest_path)
         
     # for path in removal_list: #! delete designated images version
     #     os.remove(path)

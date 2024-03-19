@@ -118,7 +118,7 @@ class DeformableDETR(nn.Module):
         self.gt = current_class
 
 
-    def forward(self, samples: NestedTensor, pre_att=None, img_ids=None,):
+    def forward(self, samples: NestedTensor, pre_att=None):
         """ The forward expects a NestedTensor, which consists of:
                - samples.tensor: batched images, of shape [batch_size x 3 x H x W]
                - samples.mask: a binary mask of shape [batch_size x H x W], containing 1 on padded pixels
@@ -164,7 +164,7 @@ class DeformableDETR(nn.Module):
         #    query_embeds = self.query_embed.weight[:150, :]
         #    query_embeds_add = self.query_embed.weight[150:, :]
             #TODO : Inference 시에 두 개의 Weight를 합쳐서 진행하는 작업이 필요할 듯 하다.
-        hs, init_reference, inter_references, enc_outputs_class, enc_outputs_coord_unact = self.transformer(srcs, masks, pos, query_embeds, pre_att, img_ids)
+        hs, init_reference, inter_references, enc_outputs_class, enc_outputs_coord_unact = self.transformer(srcs, masks, pos, query_embeds, pre_att)
 
 
         outputs_classes = []

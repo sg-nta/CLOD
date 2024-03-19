@@ -30,7 +30,7 @@ class CocoDetection(VisionDataset):
     """
 
     def __init__(self, root, annFile, transform=None, target_transform=None, transforms=None,
-                 cache_mode=False, local_rank=0, local_size=1, ids_list = None, class_ids = None):
+                 cache_mode=False, local_rank=0, local_size=1, ids_list = None, class_ids = None, task_idx=None, incremental_setup=None):
         super(CocoDetection, self).__init__(root, transforms, transform, target_transform)
         from pycocotools.coco import COCO
         self.coco = COCO(annFile)
@@ -38,14 +38,23 @@ class CocoDetection(VisionDataset):
         if not isinstance(class_ids, list):
             class_ids = [class_ids]
         self.class_ids = class_ids
+        self.task_idx = task_idx
         
-        if class_ids is not None and ids_list == None:
-            self.ids = []
-            for c_idx in self.class_ids:
-                img_ids = self.coco.getImgIds(catIds= c_idx)
-                self.ids.extend(img_ids)
-            self.ids = list(set(self.ids))
+        if incremental_setup is not None :
+            self.setup_incremental(incremental_setup[0], incremental_setup[1]) # old, new task
         
+            if class_ids is not None and ids_list == None:
+                if task_idx == 0:
+                    self.ids = self.t1_ids
+                elif task_idx == 1:
+                    self.ids = self.t2_ids
+        else :
+            if class_ids is not None and ids_list == None:
+                self.ids = []
+                for c_idx in self.class_ids:
+                    img_ids = self.coco.getImgIds(catIds= c_idx)
+                    self.ids.extend(img_ids)
+                self.ids = list(set(self.ids))        
         #print(f"{dist.get_rank()} here image id list counts : {self.ids}")
         self.cache_mode = cache_mode
         self.local_rank = local_rank
@@ -53,6 +62,36 @@ class CocoDetection(VisionDataset):
         if cache_mode:
             self.cache = {}
             self.cache_images()
+            
+    def setup_incremental(self, class_ids_t1, class_ids_t2):
+        """
+        Set up for incremental training. Filters images based on class IDs for T1 and T2.
+        Args:
+            class_ids_t1 (list): Class IDs for the T1 phase.
+            class_ids_t2 (list): Class IDs for the T2 phase.
+        """
+        t1_ids = set()
+        t2_ids = set()
+
+        # Collecting image IDs for T1 and T2 classes
+        for img_id in self.ids:
+            ann_ids = self.coco.getAnnIds(imgIds=img_id)
+            anns = self.coco.loadAnns(ann_ids)
+            if any(ann['category_id'] in class_ids_t1 for ann in anns):
+                t1_ids.add(img_id)
+
+        # Determine the split size for each phase
+        split_size = len(self.ids) // 2
+
+        # Truncate or expand t1_ids and t2_ids to the split size
+        t1_ids = list(t1_ids)[:split_size]
+
+        # If either set is smaller than split_size, add IDs from the other set
+        t2_ids = [img_id for img_id in self.ids if (img_id not in t1_ids)]
+
+
+        self.t1_ids = t1_ids
+        self.t2_ids = t2_ids
 
     def cache_images(self):
         self.cache = {}

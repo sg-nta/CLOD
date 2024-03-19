@@ -33,7 +33,7 @@ def init(args):
     cudnn.benchmark = False
     cudnn.deterministic = True
     
-    if not args.eval and utils.is_main_process() and args.wandb:
+    if utils.is_main_process() and args.wandb:
         wandb.login()
         experiment_name = f"{args.run_name}_{args.model_name}_{args.divide_ratio}_batch={args.batch_size}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         run = wandb.init(project=args.prj_name, name=experiment_name, config=vars(args))
@@ -329,19 +329,20 @@ class TrainingPipeline:
             for task_idx in range(test_epoch) :
                 print(colored(f"evaluation task number {task_idx + 1} / {test_epoch}", "blue", "on_yellow"))
                 
-                dataset_val, data_loader_val, _, _  = Incre_Dataset(task_idx, args, Divided_Classes)
+                dataset_val, data_loader_val, _, _  = Incre_Dataset(task_idx, args, Divided_Classes, False, True)
                 base_ds = get_coco_api_from_dataset(dataset_val)
                 
                 with open(self.DIR, 'a') as f:
                     f.write(f"-----------------------task working----------------------\n")
                     f.write(f"NOW TASK num : {task_idx + 1} / {test_epoch}, checked classes : {sum(Divided_Classes[:task_idx+1], [])} \t ")
-                    
+                    # f.write(f"NOW TASK num : {task_idx + 1} / {test_epoch}, checked classes : {sum(Divided_Classes[:task_idx+2], [])} \t ")
+                    # f.write(f"NOW TASK num : {task_idx + 1} / {test_epoch}, checked classes : {Divided_Classes[task_idx]} \t ")
+
                 evaluate(self.model, self.criterion, self.postprocessors, data_loader_val, base_ds, self.device, args.output_dir, self.DIR, args)
-                
+
 
     def incremental_train_epoch(self, task_idx, last_task, dataset_train, data_loader_train, sampler_train, list_CC, first_training=False):
         args = self.args
-        self.list_cc = list_CC
         T_epochs = args.Task_Epochs[0] if isinstance(args.Task_Epochs, list) else args.Task_Epochs
         
         for epoch in range(self.start_epoch, T_epochs): 
@@ -362,7 +363,25 @@ class TrainingPipeline:
             #* Save model each epoch
             save_model_params(model_without_ddp=self.model_without_ddp, optimizer=self.optimizer, lr_scheduler=self.lr_scheduler,
                             args=args, output_dir=args.output_dir, task_index=task_idx, total_tasks=int(self.tasks), epoch=epoch)
-        
+            
+            
+            # if epoch % 10 == 4 and utils.is_main_process():
+            #     test_epoch = task_idx + 1
+            #     eval_classes = create_dataset_for_incremental(args, False)
+            #     for task_idx in range(test_epoch) :
+            #         print(colored(f"evaluation task number {task_idx + 1} / {test_epoch}", "blue", "on_yellow"))
+            #         print(colored(f"task level : {task_idx}, evaluated model epoch : {epoch}", "blue", "on_yellow"))
+                    
+            #         dataset_val, data_loader_val, _, _  = Incre_Dataset(task_idx, args, eval_classes, False, True)
+            #         base_ds = get_coco_api_from_dataset(dataset_val)
+                    
+            #         with open(self.DIR, 'a') as f:
+            #             f.write(f"-----------------------task working----------------------\n")
+            #             f.write(f"NOW TASK num : {task_idx + 1} / {test_epoch}, checked classes : {sum(eval_classes[:task_idx+1], [])} \t ")
+                        
+            #         evaluate(self.model, self.criterion, self.postprocessors, data_loader_val, base_ds, self.device, args.output_dir, self.DIR, args, epoch)
+            
+            # dist.barrier()
         #* If task change, training epoch should be zero.
         self.start_epoch = 0
         
@@ -373,11 +392,12 @@ class TrainingPipeline:
         #TODO: maybe delete the code here
         self.load_replay.extend(self.Divided_Classes[task_idx])
         
-        #* distillation task and reload new teacher model.
+        #* distillation task.
         self.teacher_model = self.model_without_ddp
         self.teacher_model = teacher_model_freeze(self.teacher_model)
 
-        if utils.get_world_size() > 1: dist.barrier()
+        if utils.get_world_size() > 1:
+            dist.barrier()
 
     # No incremental learning process    
     def only_one_task_training(self):
@@ -392,36 +412,22 @@ class TrainingPipeline:
                                         list_CC=list_CC)
         
     # No incremental learning process    
-    def pseudo_work(self, re_gen=False, insufficient_objects=None, count=0):
-        args = self.args
-        generated_path = args.generator_path #* absolute_path
-        json_file_name = 'annotations/pseudo_data.json'
-        json_dir = os.path.join(generated_path, json_file_name)
-        
-        incremental_classes = self.Divided_Classes
-        all_classes = sum(incremental_classes[:self.start_task], [])
-        if args.new_gen :
-            all_classes = incremental_classes[self.start_task] 
-        max_class = max(all_classes)
-        min_class = min(all_classes)
-        print(colored(f"generating min classes : {min_class} / max classes : {max_class}.", "blue", "on_yellow"))
-        
-        if os.path.exists(json_dir) and re_gen==False:
-            print(colored(f"{json_dir} already exists. Skipping making pseudo dataset.", "blue", "on_yellow"))
-            return
-        
+    def pseudo_work(self):
         if utils.is_main_process():
-            if os.path.exists(json_dir) and re_gen:
-                existing_image_ids, insufficient_cats = get_existing_image_ids(json_dir, insufficient_objects)
-            else:
-                existing_image_ids = None
-                insufficient_cats = None
+            args = self.args
+            generated_path = args.pseudo_path #* absolute_path
+            json_file_name = 'annotations/pseudo_data.json'
+            json_dir = os.path.join(generated_path, json_file_name)
             
-            generated_image_path = os.path.join(generated_path, "images")   
-            gen_dataset = PseudoDataset(generated_image_path, args, pseudo_path=json_dir, existing_ids=existing_image_ids, regen=re_gen)
+            # JSON 파일이 이미 존재하면 함수를 종료합니다.
+            if os.path.exists(json_dir):
+                print(colored(f"{json_dir} already exists. Skipping making pseudo dataset.", "blue", "on_yellow"))
+                return
+            
+            generated_image_path = os.path.join(generated_path, "images")
+            gen_dataset = PseudoDataset(generated_image_path, args)
             dataset_frame = gen_dataset.generate_data
-            if re_gen:
-                indicate_frame = gen_dataset.indicated_data
+            # indicate_frame = gen_dataset.indicated_data
             
             sampler_train = torch.utils.data.SequentialSampler(gen_dataset)
             batch_sampler_train = torch.utils.data.BatchSampler(sampler_train, batch_size=1, drop_last=False)
@@ -430,14 +436,9 @@ class TrainingPipeline:
                                     collate_fn=utils.collate_fn, num_workers=args.num_workers,
                                     pin_memory=True, prefetch_factor=args.prefetch)
             
-            dataset_frame = pseudo_process(args=args, dataset_frame=dataset_frame, data_loader=data_loader, 
-                                        image_paths=generated_image_path, model=self.teacher_model, device=self.device , insufficient_cats=insufficient_cats, count=count, min_class=min_class, max_class=max_class)
+            dataset_frame = pseudo_process(args=args, dataset_frame=dataset_frame, gligen_frame=dataset_frame, data_loader=data_loader, 
+                                        image_paths=generated_image_path, model=self.teacher_model, device=self.device )
             
-            if re_gen:
-                indicate_frame['images'].extend(dataset_frame['images'])
-                indicate_frame['annotations'].extend(dataset_frame['annotations'])
-                dataset_frame = indicate_frame
-                
             # 딕셔너리를 JSON 파일로 저장합니다.
             with open(json_dir, 'w') as f:
                 json.dump(dataset_frame, f, indent=4)
@@ -445,110 +446,38 @@ class TrainingPipeline:
             print(colored(f"{json_dir} has been successfully created.", "blue", "on_yellow"))
         
         #* if use MultiGPU, so then you should sync each GPUs
-        if utils.get_world_size() > 1 : dist.barrier()
-        
-        return
+        if utils.get_world_size() > 1 :
+            dist.barrier()
             
-    def generator(self):
-        args = self.args
-        incremental_classes = self.Divided_Classes
-        all_classes = sum(incremental_classes[:self.start_task], []) #! previous classes (all previous)
-        if args.new_gen :
-            all_classes = incremental_classes[self.start_task] #! target classes (only current)
-        max_class = max(all_classes)
-        min_class = min(all_classes)
-        print(colored(f"| generating | min classes : {min_class} / max classes : {max_class}.", "blue", "on_yellow"))
-        
-        
-        #* blip, SD, GLIGEN processing. all generation samples generate here.
-        print(colored(f"generating processing start.", "blue", "on_yellow"))
-        generation_process(args, max_class, min_class)
-        return
-    
     # No incremental learning process    
     def labeling_check(self):
-        '''
-            gen_path = pseudo_data (refined data coco format)
-            original_path = genarated coco path (initial gen path)
-        '''
-        # if utils.is_main_process():
-        args = self.args
-        generated_path = args.generator_path #* absolute_path
-        refined_json = 'annotations/pseudo_data.json'
-        refined_json_dir = os.path.join(generated_path, refined_json)
-        
-        incremental_classes = self.Divided_Classes
-        all_classes = sum(incremental_classes[:self.start_task], []) #! previous classes (all previous)
-        if args.new_gen :
-            all_classes = incremental_classes[self.start_task] #! target classes (only current)
-        max_class = max(all_classes)
-        min_class = min(all_classes)
-        print(colored(f"| label check | min classes : {min_class} / max classes : {max_class}.", "blue", "on_yellow"))
-        
-        if os.path.exists(refined_json_dir) is not True:
-            print(colored(f"{refined_json_dir} is not exists. Can't check the pseudo labeling work.", "red", "on_yellow"))
-            return
-        
-        initial_gen_json = "annotations/Total_coco.json"
-        initial_gen_json_dir = os.path.join(generated_path, initial_gen_json) #* genarated coco path (initial gen path)
-        generated_image_path = os.path.join(generated_path, "images")
-        gen_dataset = PseudoDataset(generated_image_path, args, initial_gen_json_dir, refined_json_dir)
-        
-        #* check work for visualization
-        # pseudo_data_for_check = gen_dataset.pseudo_data
-        # original_data_for_check = gen_dataset.original_data
-        # check_and_copy_different_annotations(pseudo=pseudo_data_for_check, origin=original_data_for_check, gen_path=generated_path)
-        
-        coco_json_name = 'annotations/instances_train2017.json'
-        origin_coco_json_dir = os.path.join(args.coco_path, coco_json_name)
-        insufficient_objects = gen_ratio_check(original_data_path=origin_coco_json_dir, gen_data_path=refined_json_dir, target_ratio=args.object_counts,min_c=min_class, max_c=max_class)
-    
-        # #* if use MultiGPU, so then you should sync each GPUs
-        if utils.get_world_size() > 1 :
-            dist.barrier()
-        
-        #* end
-        print(colored(f"labeling check finish.", "blue", "on_yellow"))
-        return insufficient_objects
-    
-    def regeneration(self, insufficient_objects, count = 0):
-        '''
-            re-generate the image as many objects as it lacks the standard (args.target_ratio)
-        '''
-        args = self.args
-        check_insufficient = insufficient_objects
-        
-        if dist.get_world_size() > 1:
-            gpus = dist.get_world_size()
-            insufficient = {}
-            for key, value in insufficient_objects.items():
-                if value >= gpus:
-                    insufficient[key] = int(value / gpus)
-                else:
-                    insufficient[key] = value
-        else:
-            insufficient = insufficient_objects.copy()
+        if utils.is_main_process():
+            args = self.args
+            generated_path = args.pseudo_path #* absolute_path
+            json_file_name = 'annotations/pseudo_data.json'
+            json_dir = os.path.join(generated_path, json_file_name)
             
-        args = self.args
-        incremental_classes = self.Divided_Classes
-        all_classes = sum(incremental_classes[:self.start_task], [])
-        if args.new_gen :
-            all_classes = incremental_classes[self.start_task] 
-        max_class = max(all_classes)
-        min_class = min(all_classes)
-        print(colored(f"generating min classes : {min_class} / max classes : {max_class}.", "blue", "on_yellow"))
-        
-        print(colored(f"re-generating processing start.", "blue", "on_yellow"))
-        generation_process(args, max_class, min_class, insufficient, count)
-        
-        #* end
-        print(colored(f"re-generating processing finish.", "blue", "on_yellow"))
+            # JSON 파일이 이미 존재하면 함수를 종료합니다.
+            if os.path.exists(json_dir) is not True:
+                print(colored(f"{json_dir} is not exists. Can't check the pseudo labeling work.", "red", "on_yellow"))
+                return
+            
+            generated_image_path = os.path.join(generated_path, "images")
+            gen_json_dir = os.path.join(generated_path, "annotations/Total_coco.json")
+            gen_dataset = PseudoDataset(generated_image_path, args, gen_json_dir, json_dir)
+            pseudo_data_for_check = gen_dataset.pseudo_data
+            original_data_for_check = gen_dataset.original_data
+            
+            #* check work
+            check_and_copy_different_annotations(pseudo=pseudo_data_for_check, origin=original_data_for_check, gen_path=generated_path)
+
+        #* if use MultiGPU, so then you should sync each GPUs
         if utils.get_world_size() > 1 :
             dist.barrier()
-        return check_insufficient
-
-
         
+        #* end
+        return
+
 from copy import deepcopy
 def generate_dataset(first_training, task_idx, args, pipeline):
     #* Generate new dataset(current classes)
@@ -592,5 +521,10 @@ def generate_dataset(first_training, task_idx, args, pipeline):
         new_dataset, new_loader, new_sampler = CombineDataset(
                 args, gen_dataset_train, new_dataset, args.num_workers, args.batch_size, 
                 old_classes=previous_classes, pseudo_training=True)
-
+        
+        if args.pseudo_T2_path is not None :
+            gen_dataset_train, _, _, previous_classes = Incre_Dataset(task_idx, args, pipeline.Divided_Classes, pseudo_dataset=True, T2_path = args.pseudo_T2_path)
+            new_dataset, new_loader, new_sampler = CombineDataset(
+                args, gen_dataset_train, new_dataset, args.num_workers, args.batch_size, 
+                old_classes=previous_classes, pseudo_training=True)
     return new_dataset, new_loader, new_sampler, list_CC

@@ -33,7 +33,7 @@ def normal_query_selc_to_target(outputs, targets, current_classes):
 
         if labels[labels < current_classes].size(0) > 0:
             image_id = target["image_id"].item()
-             
+            
             addlabels = labels[labels < current_classes]
             addboxes = boxes[labels < current_classes]
             area = addboxes[:, 2] * addboxes[:, 3]
@@ -58,9 +58,9 @@ def only_oldset_mosaic_query_selc_to_target(outputs, targets, current_classes):
     labels = topk_indexes % out_logits.shape[2]
     boxes = torch.gather(out_bbox, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
     results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes)]
-    threshold = 0.5
+    threshold = 0.3
     current_classes = min(current_classes)
-    for target, result in zip(targets, results):
+    for idx, (target, result) in enumerate(zip(targets, results)):
         if target["labels"][target["labels"] >= current_classes].shape[0] > 0: #New Class에서만 동작하도록 구성
             continue
         
@@ -72,16 +72,17 @@ def only_oldset_mosaic_query_selc_to_target(outputs, targets, current_classes):
             addlabels = labels[labels >= current_classes]
             addboxes = boxes[labels >= current_classes]
             area = addboxes[:, 2] * addboxes[:, 3]   
-            random_contorl = random.uniform(-1e-10, +1e-10)
-            addboxes += random_contorl
-            print("new fake query operation")
-            target["boxes"] = torch.cat((target["boxes"], addboxes))
-            target["labels"] = torch.cat((target["labels"], addlabels))            
             
+            targets[idx]["boxes"] = torch.cat((target["boxes"], addboxes))
+            targets[idx]["labels"] = torch.cat((target["labels"], addlabels))
+            targets[idx]["area"] = torch.cat((target["area"], area))
+            targets[idx]["iscrowd"] = torch.cat((target["iscrowd"], torch.tensor([0], device = torch.device("cuda"))))        
+            
+            print("new fake query operation")
     return targets
 
 import os
-def pseudo_target(outputs, count=0, min_class=0, max_class=0):
+def pseudo_target(outputs, ):
     #! target original information 
     out_logits, out_bbox = outputs['pred_logits'], outputs['pred_boxes']
     # image_id = image_name.split(".").pop(0)
@@ -98,35 +99,25 @@ def pseudo_target(outputs, count=0, min_class=0, max_class=0):
                                                                               #* pick the values in bbox coordinates that is correspond to the topk_boxes.
     result = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes)].pop()
         
-    threshold = 0.8
-    if count >= 2 : #3-7 / 5=6 / 7=5 / 9 = 4(10)
-        step = count - 1
-        interval = 0.05
-        threshold = threshold - (step * interval)
-        
-        if threshold <= 0.4  : threshold = 0.4
-        # print(f"---- generation count : {count} - pseudo target confidence threshold : {threshold} ----")            
-        
+    threshold = 0.7 #* maybe changed for ablation experience
     scores = result["scores"][result["scores"] > threshold].detach()
     labels = result["labels"][result["scores"] > threshold].detach() 
-    boxes = result["boxes"][result["scores"] > threshold].detach() #* cx,cy,w ,h
-    
-    
-    addlabels = labels[labels <= max_class]
-    addboxes = boxes[labels <= max_class]
-    if addboxes.size(0) == 0:  # threshold를 넘는 boxes가 없는 경우
-        return None, None, None, threshold
+    boxes = result["boxes"][result["scores"] > threshold].detach() #* cx,cy,,w ,h
+    if boxes.size(0) == 0:  # threshold를 넘는 boxes가 없는 경우
+        return None, None, None
     
     #* cx, cy, w, h -> x, y, w, h
-    addboxes[:, 0] = addboxes[:, 0] - (addboxes[:, 2] / 2)
-    addboxes[:, 1] = addboxes[:, 1] - (addboxes[:, 3] / 2)
-    addboxes = torch.clamp(addboxes, min=0)
-    refined_labels, refined_boxes =  addlabels, addboxes
+    boxes[:, 0] = boxes[:, 0] - (boxes[:, 2] / 2)
+    boxes[:, 1] = boxes[:, 1] - (boxes[:, 3] / 2)
+    refined_labels, refined_boxes =  labels, boxes
+    # refined_labels, refined_boxes = refine_predictions(gligen_frame, image_name, labels, boxes)
+    # if refined_boxes == None :
+    #     return None, None, None
     
     refined_areas = refined_boxes[:, 2] * refined_boxes[:, 3]
     # draw_boxes_on_image(image, target, f'Updated_{image_id}')
         
-    return refined_labels, refined_areas, refined_boxes, threshold
+    return refined_labels, refined_areas, refined_boxes
 
 from torchvision.ops import box_iou
 def refine_predictions(gligen_frame, image_name, labels, boxes):

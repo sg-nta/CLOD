@@ -44,51 +44,14 @@ def main(args):
         pipeline.evaluation_only_mode()
         return
     
-    #* image generation process
-    if args.pseudo_generation:
-        pipeline.generator()
-        return
-    
-    #* Pseudo labeling process in generated dataset
+    #* Pseudo labeling mode in generated dataset
     if args.pseudo_labeling:
         pipeline.pseudo_work()
-        
-        # #* check generation images ratio
-        insufficient_objects = pipeline.labeling_check()
-        if not insufficient_objects :
-            print(f"all classes meet the criteria")
-            return 
-        count = 0
-        print(f"regeneration process and checking to meet the standards")
-        while any(val > 0 for val in insufficient_objects.values()):
-            print(colored(f"regeneration process for standard labels", "blue", "on_yellow"))
-            print(insufficient_objects)
-            count += 1
-            
-            print(colored(f"generation count : {count}", "blue", "on_yellow"))
-            insufficient_objects = pipeline.regeneration(insufficient_objects, count)
-            pipeline.pseudo_work(re_gen=True, insufficient_objects=insufficient_objects, count=count)
-            insufficient_objects = pipeline.labeling_check()
-            
-            if not insufficient_objects:
-                print(f"all classes meet the criteria")
-                break 
-            
-            if count >= 10: 
-                print(f" ## counting finish ## ")
-                break
-            
-        print(f" ## label and generation process done ## ")
-        # print(insufficient_objects)
-        filter_annotations_by_threshold(args.generator_path, args.object_counts)
-        check_anns(args.generator_path)
         return
     
-    #* Pseudo bbox and annotation ratio check in generated dataset
+    #* Pseudo labeling mode in generated dataset
     if args.labeling_check:
-        insufficient_objects = pipeline.labeling_check()
-        if insufficient_objects: # if there are not sufficient object in gen dataset, have to re-generate the instances to meet the standard
-            pipeline.regeneration(insufficient_objects)
+        pipeline.labeling_check()
         return
     
     #* No incremental learning process, only normal training
@@ -96,7 +59,7 @@ def main(args):
         pipeline.set_task_epoch(args, 0) # only first task
         pipeline.only_one_task_training()
         return
-     
+    
     #* CL training
     print("Start training")
     start_time = time.time()
@@ -120,10 +83,6 @@ def main(args):
                                         list_CC=list_CC, first_training=first_training)
         
         is_task_changed = True
-        if args.pseudo_training:
-            #TODO: should generate samples and pseudo labeling
-            pipeline.generation_work() #TODO: generate samples
-            pipeline.pseudo_work() #* generate pseudo labeling 
         
     # Calculate and print the total time taken for training
     import datetime
@@ -131,6 +90,7 @@ def main(args):
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print("Training completed in: ", total_time_str)
 
+    
 import warnings
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning) 

@@ -57,7 +57,7 @@ class COCOeval:
     # Data, paper, and tutorials available at:  http://mscoco.org/
     # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
     # Licensed under the Simplified BSD License [see coco/license.txt]
-    def __init__(self, cocoGt=None, cocoDt=None, iouType='segm', DIR=None):
+    def __init__(self, cocoGt=None, cocoDt=None, iouType='segm', DIR=None, args=None):
         '''
         Initialize CocoEval using coco APIs for gt and dt
         :param cocoGt: coco object with ground truth annotations
@@ -77,6 +77,7 @@ class COCOeval:
         self.stats = []                     # result summarization
         self.ious = {}                      # ious between all gts and dts
         self.DIR = DIR
+        self.args = args 
         if not cocoGt is None:
             self.params.imgIds = sorted(cocoGt.getImgIds())
             self.params.catIds = sorted(cocoGt.getCatIds(catIds=cocoGt.cats))
@@ -461,8 +462,17 @@ class COCOeval:
             # if (ap == 0 and areaRng == 'all' and maxDets == 100):
             #     with open(self.DIR, 'a') as f :
             #         f.write(f" dets=100 Recall:{mean_s} \n")
+                            #cacluate AP(average precision) for each category
+            # num_classes = len(p["catIds"])
+            # avg_ap = 0.0
             print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s))
             with open(self.DIR, 'a') as f :
+                if ap == 1 and iouThr == None and areaRng == "all" and self.args.category_map:
+                    for i, cat_id in enumerate(p.catIds):
+                        print('category : {0} : {1}'.format(cat_id,np.mean(s[:,:,i,:])))
+                        f.write('category : {0} : {1}'.format(cat_id,np.mean(s[:,:,i,:])) + " \n")
+                    # print('(all categories) mAP : {}'.format(avg_ap / num_classes))
+                    
                 f.write(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s) + " \n")
 
             return mean_s

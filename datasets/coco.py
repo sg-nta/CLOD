@@ -25,9 +25,9 @@ from datasets.augmentation import *
 
 class CocoDetection(TvCocoDetection):
     def __init__(self, img_folder, ann_file, transforms, return_masks,
-                 cache_mode=False, local_rank=0, local_size=1, img_ids = None, class_ids = None):
+                 cache_mode=False, local_rank=0, local_size=1, img_ids = None, class_ids = None, task_idx=None, incremental_setup=None):
         super(CocoDetection, self).__init__(img_folder, ann_file,
-                                            cache_mode=cache_mode, local_rank=local_rank, local_size=local_size, ids_list=img_ids, class_ids=class_ids)
+                                            cache_mode=cache_mode, local_rank=local_rank, local_size=local_size, ids_list=img_ids, class_ids=class_ids, task_idx=task_idx, incremental_setup=incremental_setup)
         
         # self.coco.cats가 ann file이 아니라 class_ids를 참조하도록 변경
         cats = {}
@@ -180,10 +180,13 @@ def make_coco_transforms(image_set, fix_size=False):
 
     raise ValueError(f'unknown {image_set}')
 
-def get_paths(args, pseudo=False):
+def get_paths(args, pseudo=False, T2_path=None):
     root = Path(args.coco_path)
-    gen_root = Path(args.generator_path) 
+    gen_root = Path(args.pseudo_path) 
     mode = 'instances'
+    
+    if T2_path is not None:
+        gen_root = Path(T2_path)
 
     if pseudo : #* pseudo generation. all adatptions are fixed to only sample dataset config
         return {
@@ -203,15 +206,15 @@ def get_paths(args, pseudo=False):
         }
 
 
-def build(image_set, args, img_ids=None, class_ids=None, pseudo=False):
+def build(image_set, args, img_ids=None, class_ids=None, pseudo=False, T2_path=None, task_idx=None, incremental_setup=None):
     assert Path(args.coco_path).exists(), f'provided COCO path {args.coco_path} does not exist'
     
-    PATHS = get_paths(args, pseudo)
+    PATHS = get_paths(args, pseudo, T2_path)
     
     print(args.coco_path)
     print(PATHS)
 
     img_folder, ann_file = PATHS[image_set]
     dataset = CocoDetection(img_folder, ann_file, transforms=make_coco_transforms(image_set, args.Sampling_strategy == "icarl"), return_masks=args.masks,
-                            cache_mode=args.cache_mode, local_rank=get_local_rank(), local_size=get_local_size(), img_ids=img_ids, class_ids=class_ids)
+                            cache_mode=args.cache_mode, local_rank=get_local_rank(), local_size=get_local_size(), img_ids=img_ids, class_ids=class_ids, task_idx=task_idx, incremental_setup=incremental_setup)
     return dataset

@@ -199,7 +199,3 @@ experiments
 *.sh
 *.jpg
 *.png
-*.md
-=0.7.5
-=0.73.1
-,gitignore

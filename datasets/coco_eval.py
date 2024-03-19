@@ -28,7 +28,7 @@ from util.misc import all_gather
 from .custom_coco_eval import COCOeval
 
 class CocoEvaluator(object):
-    def __init__(self, coco_gt, iou_types, DIR):
+    def __init__(self, coco_gt, iou_types, DIR, args):
         assert isinstance(iou_types, (list, tuple))
         coco_gt = copy.deepcopy(coco_gt)
         self.coco_gt = coco_gt
@@ -36,7 +36,7 @@ class CocoEvaluator(object):
         self.iou_types = iou_types
         self.coco_eval = {}
         for iou_type in iou_types:
-            self.coco_eval[iou_type] = COCOeval(coco_gt, iouType=iou_type, DIR=self.DIR)
+            self.coco_eval[iou_type] = COCOeval(coco_gt, iouType=iou_type, DIR=self.DIR, args=args)
 
         self.img_ids = []
         self.eval_imgs = {k: [] for k in iou_types}

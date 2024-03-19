@@ -26,62 +26,6 @@ def _is_power_of_2(n):
         raise ValueError("invalid input for _is_power_of_2: {} (type: {})".format(n, type(n)))
     return (n & (n-1) == 0) and n != 0
 
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-import os
-def load_image_by_id(image_id, base_path):
-    """Load an image based on its ID and a base path."""
-    image_filename = f"{image_id:012}.jpg"
-    image_path = os.path.join(base_path, image_filename)
-    return Image.open(image_path).convert('RGB')
-
-def remove_image_padding(img_np):
-    """
-    Removes padding from a numpy image.
-    img_np: A numpy image with shape (height, width, channels).
-    Returns: A cropped image without padding.
-    """
-    mask = img_np.max(axis=2) != 0
-    m, n = img_np.shape[:2]
-    (col_start, col_end), (row_start, row_end) = mask.any(0).nonzero(), mask.any(1).nonzero()
-    cropped_img = img_np[row_start[0]: row_end[-1] + 1, col_start[0]: col_end[-1] + 1]
-    return cropped_img
-
-def save_channelwise_attention_heatmap(attention_weights, input_spatial_shapes, input_level_start_index, image_ids, save_dir, base_image_path):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    
-    B, _, H, N, P = attention_weights.shape
-    avg_attention_across_heads_points = attention_weights.mean(dim=2).mean(dim=-1)  # Average across all heads and points
-
-    for idx, image_id in enumerate(image_ids):  # Iterate over provided image IDs
-        image = np.array(load_image_by_id(image_id, base_image_path))
-        
-        for l in range(N):  # For each level
-            start_idx = input_level_start_index[l].item()
-            end_idx = input_spatial_shapes[l, 0] * input_spatial_shapes[l, 1] + start_idx
-            height, width = input_spatial_shapes[l]
-
-            avg_attention = avg_attention_across_heads_points[idx, start_idx:end_idx, l].view(height, width).cpu().detach().numpy()
-            avg_attention_resized = np.interp(avg_attention, (avg_attention.min(), avg_attention.max()), (0, 255))
-            
-            fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-            
-            # Original Image
-            axes[0].imshow(image)
-            axes[0].set_title(f"Image ID {image_id}")
-            axes[0].axis('off')
-            
-            # Attention Heatmap
-            axes[1].imshow(image, alpha=0.6)
-            axes[1].imshow(avg_attention_resized, cmap='jet', alpha=0.4, interpolation='bilinear')
-            axes[1].set_title(f"Level {l} Attention Overlay")
-            axes[1].axis('off')
-
-            plt.tight_layout()
-            plt.savefig(f"{save_dir}/image_{image_id}_level_{l}_channelwise_overlay.png")
-            plt.close()
 
 class MSDeformAttn(nn.Module):
     def __init__(self, d_model=256, n_levels=4, n_heads=8, n_points=4, ):
@@ -130,7 +74,7 @@ class MSDeformAttn(nn.Module):
         xavier_uniform_(self.output_proj.weight.data)
         constant_(self.output_proj.bias.data, 0.)
 
-    def forward(self, query, reference_points, input_flatten, input_spatial_shapes, input_level_start_index, input_padding_mask=None, pre_attn=None, visualization=None):
+    def forward(self, query, reference_points, input_flatten, input_spatial_shapes, input_level_start_index, input_padding_mask=None, pre_attn=None):
         """
         :param query                       (N, Length_{query}, C)
         :param reference_points            (N, Length_{query}, n_levels, 2), range in [0, 1], top-left (0,0), bottom-right (1, 1), including padding area
@@ -161,9 +105,6 @@ class MSDeformAttn(nn.Module):
                 print("Warning: pre_attn and current attention_weights shapes are not the same. Not using pre_attn.")
         attention_weights = F.softmax(attention_weights, -1).view(N, Len_q, self.n_heads, self.n_levels, self.n_points)
         
-        if visualization is not None: 
-            save_channelwise_attention_heatmap(attention_weights, input_spatial_shapes, input_level_start_index, visualization, "feature_map", "/data/COCODIR/train2017/")
-
         # N, Len_q, n_heads, n_levels, n_points, 2
         if reference_points.shape[-1] == 2:
             offset_normalizer = torch.stack([input_spatial_shapes[..., 1], input_spatial_shapes[..., 0]], -1) # WIDTH, HEIGHT

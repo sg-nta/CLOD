@@ -249,20 +249,12 @@ class RandomSizeCrop(object):
         self.min_size = min_size
         self.max_size = max_size
 
+
     def __call__(self, img: PIL.Image.Image, target: dict):
-        label_tensor = target['labels']
-        label_tensor = label_tensor.to('cpu')
-        label_tensor_unique = torch.unique(label_tensor)
-        limit2 = [ 28, 32, 35, 41, 56]
-        check_list2 = [idx.item() for idx in label_tensor_unique if idx.item() in limit2]
-        
-        if len(check_list2) < 1:
-            w = random.randint(self.min_size, min(img.width, self.max_size))
-            h = random.randint(self.min_size, min(img.height, self.max_size))
-            region = T.RandomCrop.get_params(img, [h, w])
-            return crop(img, target, region)
-        else:
-            return img, target
+        w = random.randint(self.min_size, min(img.width, self.max_size))
+        h = random.randint(self.min_size, min(img.height, self.max_size))
+        region = T.RandomCrop.get_params(img, [h, w])
+        return crop(img, target, region)
 
 
 class CenterCrop(object):

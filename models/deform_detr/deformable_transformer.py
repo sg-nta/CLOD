@@ -124,7 +124,7 @@ class DeformableTransformer(nn.Module):
         valid_ratio = torch.stack([valid_ratio_w, valid_ratio_h], -1)
         return valid_ratio
 
-    def forward(self, srcs, masks, pos_embeds, query_embed=None, pre_att=None, img_ids=None,):
+    def forward(self, srcs, masks, pos_embeds, query_embed=None, pre_att=None, ):
         assert self.two_stage or query_embed is not None
 
         # prepare input for encoder
@@ -151,7 +151,7 @@ class DeformableTransformer(nn.Module):
         valid_ratios = torch.stack([self.get_valid_ratio(m) for m in masks], 1)
 
         # encoder
-        memory = self.encoder(src_flatten, spatial_shapes, level_start_index, valid_ratios, lvl_pos_embed_flatten, mask_flatten, pre_att, img_ids)      
+        memory = self.encoder(src_flatten, spatial_shapes, level_start_index, valid_ratios, lvl_pos_embed_flatten, mask_flatten, pre_att)      
             
         # prepare input for decoder
         bs, _, c = memory.shape
@@ -217,9 +217,9 @@ class DeformableTransformerEncoderLayer(nn.Module):
         src = self.norm2(src)
         return src
 
-    def forward(self, src, pos, reference_points, spatial_shapes, level_start_index, padding_mask=None, pre_att=None, img_ids=None):
+    def forward(self, src, pos, reference_points, spatial_shapes, level_start_index, padding_mask=None, pre_att=None):
         # self attention
-        src2 = self.self_attn(self.with_pos_embed(src, pos), reference_points, src, spatial_shapes, level_start_index, padding_mask, pre_att, img_ids)
+        src2 = self.self_attn(self.with_pos_embed(src, pos), reference_points, src, spatial_shapes, level_start_index, padding_mask, pre_att)
         src = src + self.dropout1(src2)
         src = self.norm1(src)
 
@@ -250,12 +250,12 @@ class DeformableTransformerEncoder(nn.Module):
         reference_points = reference_points[:, :, None] * valid_ratios[:, None]
         return reference_points
 
-    def forward(self, src, spatial_shapes, level_start_index, valid_ratios, pos=None, padding_mask=None, pre_att=None, img_ids=None):
+    def forward(self, src, spatial_shapes, level_start_index, valid_ratios, pos=None, padding_mask=None, pre_att=None):
         output = src
         reference_points = self.get_reference_points(spatial_shapes, valid_ratios, device=src.device)
         for idx, layer in enumerate(self.layers):
             if (idx+1) == len(self.layers):
-                output = layer(output, pos, reference_points, spatial_shapes, level_start_index, padding_mask, pre_att, img_ids)
+                output = layer(output, pos, reference_points, spatial_shapes, level_start_index, padding_mask, pre_att)
             else:
                 output = layer(output, pos, reference_points, spatial_shapes, level_start_index, padding_mask)
 
