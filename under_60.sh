@@ -1,0 +1,17 @@
+PUS_PER_NODE=4 ./tools/run_dist_launch.sh 4 ./configs/dn_detr.sh \
+    --batch_size 10 \
+    --model_name dn_detr \
+    --use_dn \
+    --coco_path "../COCODIR/" \
+    --output_dir "./logs/underbound" \
+    --Task_Epochs 50 \
+    --Task 2 \
+    --CL_Limited 0 \
+    --start_epoch 0 \
+    --start_task 0 \
+    --verbose  \
+    --Total_Classes 90 \
+    --num_workers 16  \
+    --limit_image 1000 \
+    --least_image 30 \
+    --Branch_Incremental \
